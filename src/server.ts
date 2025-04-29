@@ -3,7 +3,7 @@ import { serveStatic } from "hono/bun";
 import { getMetaTags } from "./utils";
 import path from "node:path";
 import { 
-  OgPreviewError, 
+  MetalensError, 
   NetworkError, 
   HttpError, 
   NotFoundError, 
@@ -36,7 +36,7 @@ export async function startServer(initialUrl?: string): Promise<void> {
         });
       } catch (metaError) {
         const errorCode = getErrorStatusCode(metaError);
-        const errorType = metaError instanceof OgPreviewError ? metaError.name : 'Error';
+        const errorType = metaError instanceof MetalensError ? metaError.name : 'Error';
         const errorMessage = metaError instanceof Error ? metaError.message : 'Failed to fetch metadata';
         
         console.error(`${errorType}: ${errorMessage}`);
@@ -70,7 +70,7 @@ export async function startServer(initialUrl?: string): Promise<void> {
       });
     } catch (error) {
       const errorCode = getErrorStatusCode(error);
-      const errorType = error instanceof OgPreviewError ? error.name : 'Error';
+      const errorType = error instanceof MetalensError ? error.name : 'Error';
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch metadata';
       
       console.error(`${errorType}: ${errorMessage}`);

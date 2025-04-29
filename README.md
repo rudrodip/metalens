@@ -1,4 +1,4 @@
-# ogpreview
+# metalens
 
 > Extract, view, and analyze website metadata from the command line
 
@@ -14,19 +14,19 @@
 ## Installation
 
 ```bash
-npm install -g ogpreview
+npm install -g metalens
 
-npx ogpreview
+npx metalens
 ```
 
 ## Usage
 
 ```bash
 # Provide URL directly
-ogpreview example.com
+metalens example.com
 
 # Interactive mode
-ogpreview
+metalens
 ```
 
 After fetching metadata, choose to:
@@ -38,8 +38,8 @@ After fetching metadata, choose to:
 ## Development
 
 ```bash
-git clone https://github.com/rudrodip/ogpreview.git
-cd ogpreview
+git clone https://github.com/rudrodip/metalens.git
+cd metalens
 bun install
 bun run dev
 ```

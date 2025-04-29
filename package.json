@@ -1,5 +1,5 @@
 {
-  "name": "ogpreview",
+  "name": "metalens",
   "version": "0.0.1",
   "description": "cli that lets you preview metadata of any website locally",
   "module": "dist/index.js",
@@ -13,7 +13,7 @@
     "publish": "bun run build && npm publish --access public"
   },
   "bin": {
-    "ogpreview": "./dist/index.js"
+    "metalens": "./dist/index.js"
   },
   "devDependencies": {
     "@types/bun": "latest"
@@ -27,11 +27,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/rudrodip/ogpreview"
+    "url": "https://github.com/rudrodip/metalens"
   },
   "author": "rudrodip",
   "keywords": [
-    "ogpreview",
+    "metalens",
     "metatags",
     "opengraph",
     "preview",

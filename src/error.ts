@@ -1,12 +1,12 @@
-export class OgPreviewError extends Error {
+export class MetalensError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'OgPreviewError';
-    Object.setPrototypeOf(this, OgPreviewError.prototype);
+    this.name = 'MetalensError';
+    Object.setPrototypeOf(this, MetalensError.prototype);
   }
 }
 
-export class NetworkError extends OgPreviewError {
+export class NetworkError extends MetalensError {
   constructor(message: string = 'Network error occurred while fetching the URL') {
     super(message);
     this.name = 'NetworkError';
@@ -14,7 +14,7 @@ export class NetworkError extends OgPreviewError {
   }
 }
 
-export class DomainNotFoundError extends OgPreviewError {
+export class DomainNotFoundError extends MetalensError {
   constructor(url: string) {
     super(`Domain not found: "${url}"`);
     this.name = 'DomainNotFoundError';
@@ -22,7 +22,7 @@ export class DomainNotFoundError extends OgPreviewError {
   }
 }
 
-export class HttpError extends OgPreviewError {
+export class HttpError extends MetalensError {
   statusCode: number;
 
   constructor(statusCode: number, statusText: string) {
@@ -42,7 +42,7 @@ export class NotFoundError extends HttpError {
   }
 }
 
-export class InvalidUrlError extends OgPreviewError {
+export class InvalidUrlError extends MetalensError {
   constructor(url: string) {
     super(`Invalid URL format: "${url}"`);
     this.name = 'InvalidUrlError';
@@ -50,7 +50,7 @@ export class InvalidUrlError extends OgPreviewError {
   }
 }
 
-export class ContentParsingError extends OgPreviewError {
+export class ContentParsingError extends MetalensError {
   constructor(message: string = 'Failed to parse website content') {
     super(message);
     this.name = 'ContentParsingError';
@@ -58,7 +58,7 @@ export class ContentParsingError extends OgPreviewError {
   }
 }
 
-export class MetadataExtractionError extends OgPreviewError {
+export class MetadataExtractionError extends MetalensError {
   constructor(message: string = 'Failed to extract metadata from content') {
     super(message);
     this.name = 'MetadataExtractionError';
@@ -66,8 +66,8 @@ export class MetadataExtractionError extends OgPreviewError {
   }
 }
 
-export function determineErrorType(error: unknown, url: string = ''): OgPreviewError {
-  if (error instanceof OgPreviewError) {
+export function determineErrorType(error: unknown, url: string = ''): MetalensError {
+  if (error instanceof MetalensError) {
     return error;
   }
   
@@ -104,5 +104,5 @@ export function determineErrorType(error: unknown, url: string = ''): OgPreviewE
     return new ContentParsingError(errorMessage);
   }
   
-  return new OgPreviewError(errorMessage);
+  return new MetalensError(errorMessage);
 } 

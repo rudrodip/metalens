@@ -161,8 +161,8 @@ export async function runCli(args: string[]): Promise<void> {
   const program = new Command();
 
   program
-    .name("ogpreview")
-    .description("🔍 OG Preview - Metadata Explorer")
+    .name("metalens")
+    .description("🔍 Metalens - Metadata Explorer")
     .version("0.0.1")
     .argument("[url]", "Website URL to fetch metadata from")
     .action(async (urlArg) => {
