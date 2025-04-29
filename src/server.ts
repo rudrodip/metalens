@@ -92,11 +92,17 @@ export async function startServer(initialUrl?: string): Promise<void> {
   } else if (fs.existsSync(srcIndexPath)) {
     staticRoot = path.resolve("./src");
   } else {
-    staticRoot = path.dirname(import.meta.url.replace("file:", ""));
+    staticRoot = path.dirname(import.meta.url.replace(process.platform === 'win32' ? /^file:\/\/\// : "file:", ""));
   }
   
   app.get("/", (c) => {
-    return c.html(fs.readFileSync(path.join(staticRoot, "index.html"), "utf-8"));
+    const indexPath = path.join(staticRoot, "index.html");
+    try {
+      return c.html(fs.readFileSync(indexPath, "utf-8"));
+    } catch (error) {
+      console.error(`Error reading index.html from ${indexPath}:`, error);
+      return c.text(`Failed to load UI. Please check server logs.`, 500);
+    }
   })
   
   const server = serve({
