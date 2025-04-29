@@ -1,6 +1,6 @@
 {
   "name": "metalens",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "cli that lets you preview metadata of any website locally",
   "module": "dist/index.js",
   "type": "module",
