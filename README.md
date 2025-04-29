@@ -9,7 +9,7 @@
 - Save metadata as JSON for further analysis
 - Preview metadata in a local web interface
 
-![preview](./.github/assets/ogpreview.png)
+![preview](./.github/assets/preview.png)
 
 ## Installation
 
