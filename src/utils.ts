@@ -168,7 +168,8 @@ export function parseFileName(filename: string): string {
 
 export async function getMetaTags(url: string) {
   if (!url.match(/^https?:\/\//i)) {
-    url = `https://${url}`;
+    const isLocalhost = url.startsWith('localhost') || url.includes('localhost:');
+    url = `${isLocalhost ? 'http' : 'https'}://${url}`;
   }
   const content = await getWebsiteContent(url);
   return extractMetadata(content);
