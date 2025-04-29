@@ -44,7 +44,10 @@ export async function getWebsiteContent(url: string) {
     }
     
     try {
-      return await response.text();
+      // Clone the response before calling text() to avoid issues with Bun's Response handling
+      const clonedResponse = response.clone();
+      const text = await clonedResponse.text();
+      return text;
     } catch (textError) {
       throw new ContentParsingError(`Failed to extract text content: ${textError instanceof Error ? textError.message : 'Unknown parsing error'}`);
     }

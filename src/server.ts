@@ -1,13 +1,13 @@
 import { Hono } from "hono";
-import { serveStatic } from "hono/bun";
+import { serve } from '@hono/node-server'
 import { getMetaTags } from "./utils";
 import path from "node:path";
 import fs from "node:fs";
-import { 
-  MetalensError, 
-  NetworkError, 
-  HttpError, 
-  NotFoundError, 
+import {
+  MetalensError,
+  NetworkError,
+  HttpError,
+  NotFoundError,
   InvalidUrlError,
   ContentParsingError,
   DomainNotFoundError
@@ -84,7 +84,6 @@ export async function startServer(initialUrl?: string): Promise<void> {
   
   let staticRoot = path.resolve("./src");
   
-  // Check if we're running from the dist directory (production)
   const distIndexPath = path.join(process.cwd(), "dist/index.html");
   const srcIndexPath = path.resolve("./src/index.html");
   
@@ -96,11 +95,11 @@ export async function startServer(initialUrl?: string): Promise<void> {
     staticRoot = path.dirname(import.meta.url.replace("file:", ""));
   }
   
-  console.log(`Serving static files from: ${staticRoot}`);
+  app.get("/", (c) => {
+    return c.html(fs.readFileSync(path.join(staticRoot, "index.html"), "utf-8"));
+  })
   
-  app.use("/*", serveStatic({ root: staticRoot }));
-  
-  const server = Bun.serve({
+  const server = serve({
     port: 3141,
     fetch: app.fetch
   });

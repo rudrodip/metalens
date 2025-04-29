@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 
 import { getMetaTags, parseFileName, parseUrlForFilename } from "./utils";
 import { PageMetadata } from "./types";
@@ -120,6 +120,11 @@ function displayFormattedError(error: unknown, url: string) {
 
 async function processUrl(url: string): Promise<void> {
   try {
+    if (!url.match(/^https?:\/\//i)) {
+      const isLocalhost = url.startsWith('localhost') || url.includes('localhost:');
+      url = `${isLocalhost ? 'http' : 'https'}://${url}`;
+    }
+
     console.log(`\nFetching metadata for ${url}...`);
     const metadata = await getMetaTags(url);
     console.log("\n✅ Metadata retrieved successfully!");
