@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ogpreview</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      border-radius: 0 !important;
+    }
+
+    body {
+      background-color: #000;
+      color: #fff;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header {
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid #333;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      text-transform: lowercase;
+      letter-spacing: -0.5px;
+      font-weight: 400;
+    }
+
+    .tagline {
+      color: #888;
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    .input-container {
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid #333;
+      background-color: #111;
+    }
+
+    .input-group {
+      display: flex;
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      background-color: #000;
+      border: 1px solid #333;
+      color: #fff;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    input[type="text"]:focus {
+      border-color: #666;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background-color: #000;
+      border: 1px solid #333;
+      color: #fff;
+      font-size: 1rem;
+      outline: none;
+      resize: vertical;
+      min-height: 100px;
+      margin-bottom: 1rem;
+    }
+
+    textarea:focus {
+      border-color: #666;
+    }
+
+    .edit-field {
+      margin-bottom: 1rem;
+    }
+
+    .edit-label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #888;
+      font-size: 0.9rem;
+    }
+
+    button {
+      background-color: #fff;
+      color: #000;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background-color: #ddd;
+    }
+
+    .status {
+      margin: 1rem 0 0;
+      padding: 0.75rem;
+      border: 1px solid #333;
+      display: none;
+      font-size: 0.9rem;
+    }
+
+    .status.success {
+      border-color: #2a2;
+      color: #2a2;
+      display: block;
+    }
+
+    .status.error {
+      border-color: #a22;
+      color: #a22;
+      display: block;
+    }
+
+    .status.error-network {
+      border-color: #e67e22;
+      color: #e67e22;
+      display: block;
+    }
+
+    .status.error-notfound {
+      border-color: #9b59b6;
+      color: #9b59b6;
+      display: block;
+    }
+
+    .status.error-invalid {
+      border-color: #3498db;
+      color: #3498db;
+      display: block;
+    }
+
+    .status.error-content {
+      border-color: #1abc9c;
+      color: #1abc9c;
+      display: block;
+    }
+
+    .status.error-domain {
+      border-color: #e74c3c;
+      color: #e74c3c;
+      display: block;
+    }
+
+    main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .meta-section {
+      flex: 1;
+      padding: 2rem;
+      border-right: 1px solid #333;
+      overflow-y: auto;
+      height: 100%;
+    }
+
+    .section-title {
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .copy-button {
+      background-color: #333;
+      color: #fff;
+      border: none;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .copy-button:hover {
+      background-color: #444;
+    }
+
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #333;
+      margin-bottom: 1rem;
+    }
+
+    .tab {
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      color: #888;
+      border: 1px solid transparent;
+      margin-bottom: -1px;
+    }
+
+    .tab.active {
+      color: #fff;
+      border: 1px solid #333;
+      border-bottom-color: #111;
+      background-color: #111;
+    }
+
+    .code-display {
+      border: 1px solid #333;
+      padding: 1rem;
+      background-color: #111;
+      position: relative;
+      overflow: auto;
+      height: auto;
+      min-height: 300px;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .code-display::before {
+      content: "// generated meta tags";
+      position: absolute;
+      top: 0.5rem;
+      left: 0.5rem;
+      color: #555;
+      font-size: 0.8rem;
+    }
+
+    pre {
+      margin-top: 1.5rem;
+      white-space: pre-wrap;
+      color: #aaa;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .tag-name {
+      color: #88f;
+    }
+
+    .attribute {
+      color: #f88;
+    }
+
+    .value {
+      color: #8f8;
+    }
+
+    .preview-section {
+      flex: 1;
+      padding: 2rem;
+      overflow-y: auto;
+      height: 100%;
+    }
+
+    .preview-container {
+      margin-bottom: 2rem;
+      border: 1px solid #333;
+      background-color: #111;
+    }
+
+    .preview-header {
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #333;
+      font-size: 0.8rem;
+      color: #888;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .preview-content {
+      padding: 1rem;
+    }
+
+    .preview-placeholder {
+      text-align: center;
+      color: #555;
+      padding: 2rem 1rem;
+    }
+
+    .social-preview {
+      border: 1px solid #222;
+      margin-bottom: 0.5rem;
+      background-color: #0a0a0a;
+    }
+
+    .social-preview-header {
+      padding: 0.5rem;
+      border-bottom: 1px solid #222;
+      font-size: 0.8rem;
+    }
+
+    .social-preview-content {
+      padding: 0.75rem;
+    }
+
+    .social-preview-title {
+      font-size: 0.9rem;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+
+    .social-preview-description {
+      font-size: 0.8rem;
+      color: #aaa;
+      margin-bottom: 0.5rem;
+    }
+
+    .social-preview-url {
+      font-size: 0.7rem;
+      color: #666;
+    }
+
+    footer {
+      padding: 1rem 2rem;
+      border-top: 1px solid #333;
+      color: #555;
+      font-size: 0.8rem;
+      text-align: center;
+    }
+
+    .copy-success {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background-color: #2a2;
+      color: #fff;
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .copy-success.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>ogpreview</h1>
+    <div class="tagline">// generate and preview open graph meta tags</div>
+  </header>
+
+  <div class="input-container">
+    <div class="input-group">
+      <input type="text" id="website-url" placeholder="https://example.com" autocomplete="off">
+      <button id="check-button">Check Website</button>
+    </div>
+    <div id="status-message" class="status"></div>
+  </div>
+
+  <main>
+    <section class="meta-section">
+      <div class="section-title">
+        // meta tags
+        <button id="copy-metadata-button" class="copy-button">Copy HTML</button>
+      </div>
+      
+      <!-- Edit fields for title and description -->
+      <div class="edit-field">
+        <label class="edit-label" for="edit-title">Title</label>
+        <input style="width: 100%;" type="text" id="edit-title" placeholder="Enter custom title">
+      </div>
+      <div class="edit-field">
+        <label class="edit-label" for="edit-description">Description</label>
+        <textarea id="edit-description" placeholder="Enter custom description"></textarea>
+      </div>
+      
+      <!-- Tabs -->
+      <div class="tabs">
+        <div class="tab active" data-tab="metadata">Metadata</div>
+        <div class="tab" data-tab="json">JSON</div>
+      </div>
+      
+      <!-- Tab content -->
+      <div class="tab-content active" id="metadata-tab">
+        <div class="code-display">
+          <pre id="meta-tags">// No meta tags generated yet
+// Enter a URL and click "Check Website"</pre>
+        </div>
+      </div>
+      
+      <div class="tab-content" id="json-tab">
+        <div class="code-display">
+          <pre id="json-preview">// No JSON data yet
+// Enter a URL and click "Check Website"</pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="preview-section">
+      <div class="section-title">// social previews</div>
+      
+      <!-- X (Twitter) Preview -->
+      <div class="preview-container">
+        <div class="preview-header">
+          <span>X (Twitter)</span>
+          <span>// preview</span>
+        </div>
+        <div id="twitter-preview" class="preview-content">
+          <div class="preview-placeholder">
+            <div>[ X preview will appear here ]</div>
+            <div style="margin-top: 0.5rem; font-size: 0.8rem;">enter a url and click check</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Facebook Preview -->
+      <div class="preview-container">
+        <div class="preview-header">
+          <span>Facebook</span>
+          <span>// preview</span>
+        </div>
+        <div id="facebook-preview" class="preview-content">
+          <div class="preview-placeholder">
+            <div>[ Facebook preview will appear here ]</div>
+            <div style="margin-top: 0.5rem; font-size: 0.8rem;">enter a url and click check</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- LinkedIn Preview -->
+      <div class="preview-container">
+        <div class="preview-header">
+          <span>LinkedIn</span>
+          <span>// preview</span>
+        </div>
+        <div id="linkedin-preview" class="preview-content">
+          <div class="preview-placeholder">
+            <div>[ LinkedIn preview will appear here ]</div>
+            <div style="margin-top: 0.5rem; font-size: 0.8rem;">enter a url and click check</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Discord Preview -->
+      <div class="preview-container">
+        <div class="preview-header">
+          <span>Discord</span>
+          <span>// preview</span>
+        </div>
+        <div id="discord-preview" class="preview-content">
+          <div class="preview-placeholder">
+            <div>[ Discord preview will appear here ]</div>
+            <div style="margin-top: 0.5rem; font-size: 0.8rem;">enter a url and click check</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div>© 2025 ogpreview | built with &lt;/&gt; and ☕</div>
+  </footer>
+
+  <div id="copy-success" class="copy-success">Copied to clipboard!</div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const urlInput = document.getElementById('website-url');
+      const checkButton = document.getElementById('check-button');
+      const statusMessage = document.getElementById('status-message');
+      const metaTags = document.getElementById('meta-tags');
+      const jsonPreview = document.getElementById('json-preview');
+      const twitterPreview = document.getElementById('twitter-preview');
+      const facebookPreview = document.getElementById('facebook-preview');
+      const linkedinPreview = document.getElementById('linkedin-preview');
+      const discordPreview = document.getElementById('discord-preview');
+      const editTitleInput = document.getElementById('edit-title');
+      const editDescriptionInput = document.getElementById('edit-description');
+      const tabs = document.querySelectorAll('.tab');
+      const tabContents = document.querySelectorAll('.tab-content');
+      const copyMetadataButton = document.getElementById('copy-metadata-button');
+      const copySuccessMessage = document.getElementById('copy-success');
+      
+      let currentMetadata = null;
+      let currentUrl = '';
+
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          tabs.forEach(t => t.classList.remove('active'));
+          tabContents.forEach(content => content.classList.remove('active'));
+          
+          tab.classList.add('active');
+          const tabId = tab.getAttribute('data-tab');
+          document.getElementById(`${tabId}-tab`).classList.add('active');
+          
+          if (tabId === 'metadata') {
+            copyMetadataButton.textContent = 'Copy HTML';
+          } else if (tabId === 'json') {
+            copyMetadataButton.textContent = 'Copy JSON';
+          }
+        });
+      });
+      
+      copyMetadataButton.addEventListener('click', function() {
+        const activeTab = document.querySelector('.tab.active').getAttribute('data-tab');
+        let textToCopy = '';
+        
+        if (activeTab === 'metadata') {
+          textToCopy = metaTags.dataset.rawHtml || '';
+        } else if (activeTab === 'json') {
+          textToCopy = jsonPreview.textContent || jsonPreview.innerText;
+        }
+        
+        navigator.clipboard.writeText(textToCopy)
+          .then(() => {
+            copySuccessMessage.classList.add('show');
+            setTimeout(() => {
+              copySuccessMessage.classList.remove('show');
+            }, 2000);
+          })
+          .catch(err => {
+            console.error('Could not copy text: ', err);
+          });
+      });
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const initialUrl = urlParams.get('url');
+      
+      if (initialUrl) {
+        urlInput.value = initialUrl;
+        fetchMetadata(initialUrl);
+      }
+      
+      editTitleInput.addEventListener('input', updateWithCustomValues);
+      editDescriptionInput.addEventListener('input', updateWithCustomValues);
+      
+      function updateWithCustomValues() {
+        if (!currentMetadata) return;
+        
+        const customTitle = editTitleInput.value.trim();
+        const customDescription = editDescriptionInput.value.trim();
+        
+        const updatedMetadata = JSON.parse(JSON.stringify(currentMetadata));
+        
+        if (customTitle) {
+          updatedMetadata.title = customTitle;
+          updatedMetadata.openGraph["og:title"] = customTitle;
+          updatedMetadata.twitter["twitter:title"] = customTitle;
+        }
+        
+        if (customDescription) {
+          updatedMetadata.meta.description = customDescription;
+          updatedMetadata.openGraph["og:description"] = customDescription;
+          updatedMetadata.twitter["twitter:description"] = customDescription;
+        }
+        
+        const data = { metadata: updatedMetadata, url: currentUrl };
+        displayMetaTags(data);
+        updatePreviews(data);
+      }
+
+      function fetchMetadata(url) {
+        if (!url) {
+          showError('Please enter a valid URL');
+          return;
+        }
+
+        statusMessage.className = 'status';
+        statusMessage.textContent = '';
+        
+        checkButton.textContent = 'Processing...';
+        checkButton.disabled = true;
+        
+        editTitleInput.value = '';
+        editDescriptionInput.value = '';
+        
+        currentUrl = url;
+        
+        const loadingHTML = '<div class="preview-placeholder"><div>Loading preview...</div></div>';
+        twitterPreview.innerHTML = loadingHTML;
+        facebookPreview.innerHTML = loadingHTML;
+        linkedinPreview.innerHTML = loadingHTML;
+        discordPreview.innerHTML = loadingHTML;
+        
+        fetch('/api/metadata', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ url: url })
+        })
+        .then(response => {
+          if (!response.ok) {
+            return response.json().then(errorData => {
+              throw {
+                message: errorData.error || `HTTP error! Status: ${response.status}`,
+                type: errorData.errorType || 'Error',
+                status: response.status
+              };
+            });
+          }
+          return response.json();
+        })
+        .then(data => {
+          currentMetadata = data.metadata;
+          
+          displayMetaTags(data);
+          
+          jsonPreview.textContent = JSON.stringify(data.metadata, null, 2);
+          
+          updatePreviews(data);
+          
+          editTitleInput.value = data.metadata.title || '';
+          editDescriptionInput.value = data.metadata.openGraph["og:description"] || 
+                                      data.metadata.meta["description"] || '';
+        })
+        .catch(error => {
+          console.error('Error fetching metadata:', error);
+          
+          showErrorByType(error);
+          
+          const errorHTML = generateErrorHTML(error);
+          twitterPreview.innerHTML = errorHTML;
+          facebookPreview.innerHTML = errorHTML;
+          linkedinPreview.innerHTML = errorHTML;
+          discordPreview.innerHTML = errorHTML;
+          
+          jsonPreview.textContent = '// Error loading data\n// ' + (error.message || 'Unknown error');
+          
+          metaTags.innerHTML = '// Error fetching meta tags\n// ' + (error.message || 'Unknown error');
+          metaTags.dataset.rawHtml = '';
+        })
+        .finally(() => {
+          checkButton.textContent = 'Check Website';
+          checkButton.disabled = false;
+        });
+      }
+
+      checkButton.addEventListener('click', function() {
+        const url = urlInput.value.trim();
+        fetchMetadata(url);
+      });
+
+      function showError(message) {
+        statusMessage.className = 'status error';
+        statusMessage.textContent = message;
+      }
+      
+      function showErrorByType(error) {
+        const message = error.message || 'Unknown error';
+        const type = error.type || 'Error';
+        
+        if (type === 'DomainNotFoundError') {
+          statusMessage.className = 'status error-domain';
+          statusMessage.textContent = `Domain Not Found: ${message}`;
+        } else if (type === 'NetworkError') {
+          statusMessage.className = 'status error-network';
+          statusMessage.textContent = `Network Error: ${message}`;
+        } else if (type === 'NotFoundError') {
+          statusMessage.className = 'status error-notfound';
+          statusMessage.textContent = `Not Found: ${message}`;
+        } else if (type === 'InvalidUrlError') {
+          statusMessage.className = 'status error-invalid';
+          statusMessage.textContent = `Invalid URL: ${message}`;
+        } else if (type === 'ContentParsingError') {
+          statusMessage.className = 'status error-content';
+          statusMessage.textContent = `Content Error: ${message}`;
+        } else {
+          statusMessage.className = 'status error';
+          statusMessage.textContent = `Error: ${message}`;
+        }
+      }
+      
+      function generateErrorHTML(error) {
+        const message = error.message || 'Unknown error';
+        const type = error.type || 'Error';
+        
+        let icon = '❌';
+        let errorTitle = 'Error loading preview';
+        
+        if (type === 'DomainNotFoundError') {
+          icon = '🌐❓';
+          errorTitle = 'Domain Not Found';
+        } else if (type === 'NetworkError') {
+          icon = '🌐❌';
+          errorTitle = 'Network Connection Error';
+        } else if (type === 'NotFoundError') {
+          icon = '🔍❌';
+          errorTitle = 'Page Not Found (404)';
+        } else if (type === 'InvalidUrlError') {
+          icon = '🔗❌';
+          errorTitle = 'Invalid URL Format';
+        } else if (type === 'ContentParsingError') {
+          icon = '📄❌';
+          errorTitle = 'Content Parsing Error';
+        }
+        
+        return `
+          <div class="preview-placeholder">
+            <div>${icon} ${errorTitle}</div>
+            <div style="margin-top: 0.5rem; font-size: 0.8rem;">${message}</div>
+          </div>
+        `;
+      }
+
+      function showSuccess(message) {
+        statusMessage.className = 'status success';
+        statusMessage.textContent = message;
+      }
+
+      function displayMetaTags(data) {
+        const metadata = data.metadata;
+        
+        const tags = [];
+        const rawTags = [];
+        
+        tags.push(`<span class="tag-name">&lt;title&gt;</span>${metadata.title}<span class="tag-name">&lt;/title&gt;</span>`);
+        rawTags.push(`<title>${metadata.title}</title>`);
+        
+        Object.entries(metadata.meta).forEach(([key, value]) => {
+          tags.push(`<span class="tag-name">&lt;meta</span> <span class="attribute">name</span>=<span class="value">"${key}"</span> <span class="attribute">content</span>=<span class="value">"${value}"</span><span class="tag-name">&gt;</span>`);
+          rawTags.push(`<meta name="${key}" content="${value}">`);
+        });
+        
+        Object.entries(metadata.openGraph).forEach(([key, value]) => {
+          tags.push(`<span class="tag-name">&lt;meta</span> <span class="attribute">property</span>=<span class="value">"${key}"</span> <span class="attribute">content</span>=<span class="value">"${value}"</span><span class="tag-name">&gt;</span>`);
+          rawTags.push(`<meta property="${key}" content="${value}">`);
+        });
+        
+        Object.entries(metadata.twitter).forEach(([key, value]) => {
+          tags.push(`<span class="tag-name">&lt;meta</span> <span class="attribute">name</span>=<span class="value">"${key}"</span> <span class="attribute">content</span>=<span class="value">"${value}"</span><span class="tag-name">&gt;</span>`);
+          rawTags.push(`<meta name="${key}" content="${value}">`);
+        });
+        
+        metaTags.innerHTML = tags.join('\n');
+        
+        metaTags.dataset.rawHtml = rawTags.join('\n');
+      }
+
+      function updatePreviews(data) {
+        const metadata = data.metadata;
+        const title = metadata.title || 'Website Title';
+        const description = metadata.openGraph["og:description"] || metadata.meta["description"] || '';
+        const url = metadata.openGraph["og:url"] || data.url;
+        const image = metadata.openGraph["og:image"] || '';
+        const domain = extractDomain(url);
+        
+        twitterPreview.innerHTML = generatePreview(domain, title, description, url, image, 'twitter');
+        
+        facebookPreview.innerHTML = generatePreview(domain, title, description, url, image, 'facebook');
+        
+        linkedinPreview.innerHTML = generatePreview(domain, title, description, url, image, 'linkedin');
+        
+        discordPreview.innerHTML = generatePreview(domain, title, description, url, image, 'discord');
+      }
+      
+      function generatePreview(domain, title, description, url, image, platform) {
+        const isDiscord = platform === 'discord';
+        const styles = isDiscord ? 
+          'style="background-color: #2f3136; color: #fff;"' : '';
+        const headerStyles = isDiscord ? 
+          'style="border-color: #444;"' : '';
+        const titleStyles = isDiscord ? 
+          'style="color: #fff;"' : '';
+        const descStyles = isDiscord ? 
+          'style="color: #dcddde;"' : '';
+        const urlStyles = isDiscord ? 
+          'style="color: #72767d;"' : '';
+          
+        const imageHtml = image ? 
+          `<div><img src="${image}" alt="Preview image" style="max-width: 100%; margin-bottom: 10px;"></div>` : '';
+          
+        return `
+          <div class="social-preview" ${styles}>
+            <div class="social-preview-header" ${headerStyles}>
+              <span>${domain}</span>
+            </div>
+            <div class="social-preview-content">
+              ${imageHtml}
+              <div class="social-preview-title" ${titleStyles}>${title}</div>
+              <div class="social-preview-description" ${descStyles}>${description}</div>
+              <div class="social-preview-url" ${urlStyles}>${url}</div>
+            </div>
+          </div>
+        `;
+      }
+      
+      function extractDomain(url) {
+        try {
+          const domain = new URL(url).hostname;
+          return domain;
+        } catch (e) {
+          return url;
+        }
+      }
+
+      urlInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          checkButton.click();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
