@@ -85,7 +85,7 @@ export async function startServer(initialUrl?: string): Promise<void> {
   const hostedHtmlUrl = "https://raw.githubusercontent.com/rudrodip/metalens/refs/heads/main/src/index.html"
   let content = "";
 
-  if (process.env.NODE_ENV === "development") {
+  if (process.env.METALENS_DEV === "true") {
     console.log("Running in development mode");
     content = fs.readFileSync(path.join(process.cwd(), "src/index.html"), "utf-8");
   } else {
