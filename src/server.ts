@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
 import { getMetaTags } from "./utils";
 import path from "node:path";
+import fs from "node:fs";
 import { 
   MetalensError, 
   NetworkError, 
@@ -81,7 +82,23 @@ export async function startServer(initialUrl?: string): Promise<void> {
     }
   });
   
-  app.use("/*", serveStatic({ root: path.resolve("./src") }));
+  let staticRoot = path.resolve("./src");
+  
+  // Check if we're running from the dist directory (production)
+  const distIndexPath = path.join(process.cwd(), "dist/index.html");
+  const srcIndexPath = path.resolve("./src/index.html");
+  
+  if (fs.existsSync(distIndexPath)) {
+    staticRoot = path.join(process.cwd(), "dist");
+  } else if (fs.existsSync(srcIndexPath)) {
+    staticRoot = path.resolve("./src");
+  } else {
+    staticRoot = path.dirname(import.meta.url.replace("file:", ""));
+  }
+  
+  console.log(`Serving static files from: ${staticRoot}`);
+  
+  app.use("/*", serveStatic({ root: staticRoot }));
   
   const server = Bun.serve({
     port: 3141,
