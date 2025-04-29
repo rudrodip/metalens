@@ -1,0 +1,48 @@
+{
+  "name": "ogpreview",
+  "version": "0.0.1",
+  "description": "cli that lets you preview metadata of any website locally",
+  "module": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "bun build ./src/index.ts --outdir ./dist --target node",
+    "dev": "bun run src/index.ts",
+    "start": "bun run src/index.ts",
+    "cli": "bun run src/index.ts",
+    "test": "bun test",
+    "publish": "bun run build && npm publish --access public"
+  },
+  "bin": {
+    "ogpreview": "./dist/index.js"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rudrodip/ogpreview"
+  },
+  "author": "rudrodip",
+  "keywords": [
+    "ogpreview",
+    "metatags",
+    "opengraph",
+    "preview",
+    "metadata"
+  ],
+  "dependencies": {
+    "chalk": "^5.4.1",
+    "commander": "^13.1.0",
+    "hono": "^4.7.8",
+    "html-entities": "^2.6.0",
+    "inquirer": "^12.6.0",
+    "open": "^10.1.1"
+  }
+}
