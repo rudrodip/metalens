@@ -82,25 +82,21 @@ export async function startServer(initialUrl?: string): Promise<void> {
     }
   });
   
-  let staticRoot = path.resolve("./src");
-  
-  const distIndexPath = path.join(process.cwd(), "dist/index.html");
-  const srcIndexPath = path.resolve("./src/index.html");
-  
-  if (fs.existsSync(distIndexPath)) {
-    staticRoot = path.join(process.cwd(), "dist");
-  } else if (fs.existsSync(srcIndexPath)) {
-    staticRoot = path.resolve("./src");
+  const hostedHtmlUrl = "https://raw.githubusercontent.com/rudrodip/metalens/refs/heads/main/src/index.html"
+  let content = "";
+
+  if (process.env.NODE_ENV === "development") {
+    console.log("Running in development mode");
+    content = fs.readFileSync(path.join(process.cwd(), "src/index.html"), "utf-8");
   } else {
-    staticRoot = path.dirname(import.meta.url.replace(process.platform === 'win32' ? /^file:\/\/\// : "file:", ""));
+    content = await fetch(hostedHtmlUrl).then(res => res.text());
   }
-  
-  app.get("/", (c) => {
-    const indexPath = path.join(staticRoot, "index.html");
+
+  app.get("/", async (c) => {
     try {
-      return c.html(fs.readFileSync(indexPath, "utf-8"));
+      return c.html(content);
     } catch (error) {
-      console.error(`Error reading index.html from ${indexPath}:`, error);
+      console.error(`Error reading index.html from ${hostedHtmlUrl}:`, error);
       return c.text(`Failed to load UI. Please check server logs.`, 500);
     }
   })

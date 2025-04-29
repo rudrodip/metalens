@@ -1,12 +1,12 @@
 {
   "name": "metalens",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "cli that lets you preview metadata of any website locally",
   "module": "dist/index.js",
   "type": "module",
   "scripts": {
-    "build": "bun build ./src/index.ts --outdir ./dist --target node && cp ./src/index.html ./dist/",
-    "dev": "bun run src/index.ts",
+    "build": "bun build ./src/index.ts --outdir ./dist --target node",
+    "dev": "NODE_ENV=development bun run src/index.ts",
     "start": "bun run dist/index.js",
     "test": "bun test",
     "publish": "bun run build && npm publish --access public"
