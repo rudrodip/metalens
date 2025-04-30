@@ -4,6 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>metalens</title>
+  
+  <meta property="og:title" content="metalens">
+  <meta property="og:description" content="Extract, view, and analyze website metadata from the command line">
+  <meta property="og:image" content="https://raw.githubusercontent.com/rudrodip/metalens/refs/heads/main/.github/assets/preview.png">
+  <meta property="og:url" content="https://github.com/rudrodip/metalens">
+  <meta property="og:type" content="website">
+  
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="metalens">
+  <meta name="twitter:description" content="Extract, view, and analyze website metadata from the command line">
+  <meta name="twitter:image" content="https://raw.githubusercontent.com/rudrodip/metalens/refs/heads/main/.github/assets/preview.png">
+  
   <style>
     * {
       margin: 0;
@@ -48,6 +60,8 @@
       border: 1px solid #333;
       padding: 0.5rem;
       width: fit-content;
+      max-width: 100%;
+      overflow-x: auto;
     }
 
     .command-text {
@@ -55,6 +69,7 @@
       color: #8f8;
       padding-right: 0.5rem;
       font-size: 0.8rem;
+      white-space: nowrap;
     }
 
     .command-copy {
@@ -64,6 +79,7 @@
       padding: 0.25rem 0.5rem;
       font-size: 0.8rem;
       cursor: pointer;
+      flex-shrink: 0;
     }
 
     .command-copy:hover {
@@ -71,7 +87,7 @@
     }
 
     .input-container {
-      padding: 1.5rem 2rem;
+      padding: 1.5rem 1rem;
       border-bottom: 1px solid #333;
       background-color: #111;
     }
@@ -81,10 +97,14 @@
       width: 100%;
       max-width: 800px;
       margin: 0 auto;
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 0.5rem;
     }
 
     input[type="text"] {
       flex: 1;
+      min-width: 200px;
       padding: 0.75rem 1rem;
       background-color: #000;
       border: 1px solid #333;
@@ -193,11 +213,12 @@
       display: flex;
       flex: 1;
       overflow: hidden;
+      flex-direction: row;
     }
 
     .meta-section {
       flex: 1;
-      padding: 2rem;
+      padding: 2rem 1rem;
       border-right: 1px solid #333;
       overflow-y: auto;
       height: 100%;
@@ -212,6 +233,8 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
     }
 
     .copy-button {
@@ -231,6 +254,8 @@
       display: flex;
       border-bottom: 1px solid #333;
       margin-bottom: 1rem;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
     .tab {
@@ -239,6 +264,7 @@
       color: #888;
       border: 1px solid transparent;
       margin-bottom: -1px;
+      white-space: nowrap;
     }
 
     .tab.active {
@@ -281,6 +307,7 @@
       color: #aaa;
       font-size: 0.9rem;
       line-height: 1.5;
+      overflow-x: auto;
     }
 
     .tag-name {
@@ -297,7 +324,7 @@
 
     .preview-section {
       flex: 1;
-      padding: 2rem;
+      padding: 2rem 1rem;
       overflow-y: auto;
       height: 100%;
     }
@@ -383,6 +410,59 @@
 
     .copy-success.show {
       opacity: 1;
+    }
+
+    /* Mobile Responsive Styles */
+    @media (max-width: 768px) {
+      body {
+        height: auto;
+        overflow: auto;
+      }
+      
+      main {
+        flex-direction: column;
+        overflow: visible;
+      }
+
+      .meta-section, .preview-section {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #333;
+        overflow-y: visible;
+        height: auto;
+      }
+
+      input[type="text"], button {
+        width: 100%;
+      }
+
+      .input-group {
+        flex-direction: column;
+      }
+
+      .section-title {
+        justify-content: center;
+        text-align: center;
+      }
+    }
+
+    @media (max-width: 480px) {
+      header {
+        padding: 1rem;
+        text-align: center;
+      }
+
+      .meta-section, .preview-section {
+        padding: 1rem;
+      }
+
+      .code-display {
+        min-height: 200px;
+      }
+
+      footer {
+        padding: 0.75rem;
+      }
     }
   </style>
 </head>
