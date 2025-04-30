@@ -13,6 +13,7 @@ import {
 let serve: any;
 let path: any;
 let fs: any;
+let net: any;
 
 const isNode = typeof process !== 'undefined' && 
                typeof process.versions === 'object' && 
@@ -24,10 +25,38 @@ if (isNode) {
     serve = require('@hono/node-server').serve;
     path = require('path');
     fs = require('fs');
+    net = require('net');
   } catch (error) {
     console.error("Failed to import Node-specific modules:", error);
   }
 }
+
+const isPortAvailable = (port: number): Promise<boolean> => {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    
+    server.once('error', () => {
+      resolve(false);
+    });
+    
+    server.once('listening', () => {
+      server.close();
+      resolve(true);
+    });
+    
+    server.listen(port);
+  });
+};
+
+export const findAvailablePort = async (basePort: number): Promise<number> => {
+  let port = basePort;
+  
+  while (!(await isPortAvailable(port))) {
+    port++;
+  }
+  
+  return port;
+};
 
 export function createApp(initialContent?: string): Hono {
   const app = new Hono();
@@ -112,7 +141,7 @@ export function createApp(initialContent?: string): Hono {
   return app;
 }
 
-export async function startServer(initialUrl?: string): Promise<void> {
+export async function startServer(port: number = 3141, initialUrl?: string): Promise<void> {
   if (!isNode) {
     console.error("startServer can only be used in a Node.js environment");
     return Promise.resolve();
@@ -136,11 +165,11 @@ export async function startServer(initialUrl?: string): Promise<void> {
   const app = createApp(content);
   
   const server = serve({
-    port: 3141,
+    port,
     fetch: app.fetch
   });
   
-  console.log("Preview server started at http://localhost:3141");
+  console.log(`Preview server started at http://localhost:${port}`);
   if (initialUrl) {
     console.log(`Initial URL for preview: ${initialUrl}`);
   }

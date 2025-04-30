@@ -5,7 +5,7 @@ import { PageMetadata } from "./types";
 import fs from "node:fs/promises";
 import { Command } from "commander";
 import inquirer from "inquirer";
-import { startServer } from "./server";
+import { findAvailablePort, startServer } from "./server";
 import open from "open";
 import {
   NetworkError,
@@ -70,9 +70,11 @@ async function handleMetadataActions(metadata: PageMetadata, url: string): Promi
 
     case "preview":
       console.log("\n🌐 Starting local preview server...");
-      await startServer(url);
+      const basePort = 3141;
+      const port = await findAvailablePort(basePort);
+      await startServer(port, url);
       
-      const previewUrl = `http://localhost:3141?url=${encodeURIComponent(url)}`;
+      const previewUrl = `http://localhost:${port}?url=${encodeURIComponent(url)}`;
       console.log(`Opening preview at ${previewUrl}`);
       await open(previewUrl);
       break;
