@@ -608,7 +608,7 @@
       const tabContents = document.querySelectorAll('.tab-content');
       const copyMetadataButton = document.getElementById('copy-metadata-button');
       const copySuccessMessage = document.getElementById('copy-success');
-      const metalensCommand = document.getElementById('metalens-command');
+      const metalensCommand = document.getElementById('command-text');
       
       let currentMetadata = null;
       let currentUrl = '';
@@ -949,7 +949,6 @@
         });
       });
 
-      // Update command text while typing
       urlInput.addEventListener('input', function() {
         const url = this.value.trim();
         if (url) {
