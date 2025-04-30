@@ -35,6 +35,10 @@ After fetching metadata, choose to:
 - Save as JSON file
 - Launch local preview in browser
 
+## On the web
+
+The entire metalens service is available online at [metalens.rdsx.dev](https://metalens.rdsx.dev) powered by Cloudflare Workers.
+
 ## Development
 
 ```bash
