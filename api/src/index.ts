@@ -6,7 +6,7 @@ const app = createApp();
 
 const commandSnippet = `
 <div class="command-container">
-  <span class="command-text">npx metalens</span>
+  <span class="command-text" id="metalens-command">npx metalens</span>
   <button class="command-copy">Copy</button>
 </div>
 `;
