@@ -7,7 +7,7 @@
   "scripts": {
     "build": "bun build ./src/index.ts --outdir ./dist --target node",
     "dev": "METALENS_DEV=true bun run src/index.ts",
-    "start": "bun run dist/index.js",
+    "start": "METALENS_DEV=false bun run dist/index.js",
     "test": "bun test",
     "publish": "bun run build && npm publish --access public"
   },

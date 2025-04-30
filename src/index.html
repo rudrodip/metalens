@@ -40,6 +40,36 @@
       font-size: 0.9rem;
     }
 
+    .command-container {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+      background-color: #111;
+      border: 1px solid #333;
+      padding: 0.5rem;
+      width: fit-content;
+    }
+
+    .command-text {
+      font-family: 'JetBrains Mono', monospace;
+      color: #8f8;
+      padding-right: 0.5rem;
+      font-size: 0.8rem;
+    }
+
+    .command-copy {
+      background-color: #333;
+      color: #fff;
+      border: none;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .command-copy:hover {
+      background-color: #444;
+    }
+
     .input-container {
       padding: 1.5rem 2rem;
       border-bottom: 1px solid #333;
@@ -410,7 +440,10 @@
     </section>
 
     <section class="preview-section">
-      <div class="section-title">// social previews</div>
+      <div style="display: flex; justify-content: space-between;">
+        <div class="section-title">// social previews</div>
+        <!-- METALENS_COMMAND_SNIPPET -->
+      </div>
       
       <!-- X (Twitter) Preview -->
       <div class="preview-container">
@@ -811,6 +844,23 @@
         if (e.key === 'Enter') {
           checkButton.click();
         }
+      });
+
+      const commandCopyButtons = document.querySelectorAll('.command-copy');
+      commandCopyButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          const commandText = this.previousElementSibling.textContent;
+          navigator.clipboard.writeText(commandText)
+            .then(() => {
+              copySuccessMessage.classList.add('show');
+              setTimeout(() => {
+                copySuccessMessage.classList.remove('show');
+              }, 2000);
+            })
+            .catch(err => {
+              console.error('Could not copy command: ', err);
+            });
+        });
       });
     });
   </script>

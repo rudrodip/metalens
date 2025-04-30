@@ -1,8 +1,5 @@
 import { Hono } from "hono";
-import { serve } from '@hono/node-server'
 import { getMetaTags } from "./utils";
-import path from "node:path";
-import fs from "node:fs";
 import {
   MetalensError,
   NetworkError,
@@ -13,7 +10,26 @@ import {
   DomainNotFoundError
 } from "./error";
 
-export async function startServer(initialUrl?: string): Promise<void> {
+let serve: any;
+let path: any;
+let fs: any;
+
+const isNode = typeof process !== 'undefined' && 
+               typeof process.versions === 'object' && 
+               process.versions !== null && 
+               typeof process.versions.node === 'string';
+
+if (isNode) {
+  try {
+    serve = require('@hono/node-server').serve;
+    path = require('path');
+    fs = require('fs');
+  } catch (error) {
+    console.error("Failed to import Node-specific modules:", error);
+  }
+}
+
+export function createApp(initialContent?: string): Hono {
   const app = new Hono();
   
   app.post("/api/metadata", async (c) => {
@@ -82,24 +98,42 @@ export async function startServer(initialUrl?: string): Promise<void> {
     }
   });
   
+  if (initialContent) {
+    app.get("/", async (c) => {
+      try {
+        return c.html(initialContent);
+      } catch (error) {
+        console.error(`Error serving HTML content:`, error);
+        return c.text(`Failed to load UI. Please check server logs.`, 500);
+      }
+    });
+  }
+  
+  return app;
+}
+
+export async function startServer(initialUrl?: string): Promise<void> {
+  if (!isNode) {
+    console.error("startServer can only be used in a Node.js environment");
+    return Promise.resolve();
+  }
+
   const hostedHtmlUrl = "https://raw.githubusercontent.com/rudrodip/metalens/refs/heads/main/src/index.html"
   let content = "";
 
-  if (process.env.METALENS_DEV === "true") {
-    console.log("Running in development mode");
-    content = fs.readFileSync(path.join(process.cwd(), "src/index.html"), "utf-8");
-  } else {
-    content = await fetch(hostedHtmlUrl).then(res => res.text());
+  try {
+    if (process.env.METALENS_DEV === "true") {
+      console.log("Running in development mode");
+      content = fs.readFileSync(path.join(process.cwd(), "src/index.html"), "utf-8");
+    } else {
+      content = await fetch(hostedHtmlUrl).then(res => res.text());
+    }
+  } catch (error) {
+    console.error("Error loading HTML content:", error);
+    content = "<html><body><h1>Error loading UI</h1><p>Please check server logs.</p></body></html>";
   }
 
-  app.get("/", async (c) => {
-    try {
-      return c.html(content);
-    } catch (error) {
-      console.error(`Error reading index.html from ${hostedHtmlUrl}:`, error);
-      return c.text(`Failed to load UI. Please check server logs.`, 500);
-    }
-  })
+  const app = createApp(content);
   
   const server = serve({
     port: 3141,
