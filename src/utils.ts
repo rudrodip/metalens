@@ -1,179 +1,264 @@
-import { PageMetadata, MetaTagType, OpenGraphType, TwitterType } from "./types";
-import { decode } from "html-entities";
-import { 
+import { JSDOM, Document } from 'jsdom';
+import { decode } from 'html-entities';
+import { PageMetadata, MetaTagType, OpenGraphType, TwitterType } from './types';
+import {
+  MetalensError,
   NetworkError,
-  HttpError, 
+  HttpError,
   NotFoundError,
-  ContentParsingError,
   InvalidUrlError,
+  ContentParsingError,
+  MetadataExtractionError,
   DomainNotFoundError,
-  determineErrorType
-} from "./error";
+  determineErrorType,
+} from './error';
 
-export function isInEnum<T extends Record<string, string>>(
-  enumObj: T,
-  value: string
-): value is T[keyof T] {
-  return Object.values(enumObj).includes(value);
-}
+// Existing normalizeUrlScheme - unchanged
+export function normalizeUrlScheme(url: string): string {
+  let lowerUrl = url.toLowerCase();
 
-export async function getWebsiteContent(url: string) {
-  try {
-    try {
-      new URL(url);
-    } catch (e) {
-      throw new InvalidUrlError(url);
-    }
-
-    let response;
-    try {
-      response = await fetch(url);
-    } catch (fetchError) {
-      const errorMsg = fetchError instanceof Error ? fetchError.message : String(fetchError);
-      if (errorMsg.includes('ENOTFOUND') || errorMsg.includes('getaddrinfo')) {
-        throw new DomainNotFoundError(url);
-      }
-      throw new NetworkError(`Failed to connect to ${url}: ${fetchError instanceof Error ? fetchError.message : 'Unknown connection error'}`);
-    }
-    
-    if (!response.ok) {
-      if (response.status === 404) {
-        throw new NotFoundError(url);
-      }
-      throw new HttpError(response.status, response.statusText);
-    }
-    
-    try {
-      // Clone the response before calling text() to avoid issues with Bun's Response handling
-      const clonedResponse = response.clone();
-      const text = await clonedResponse.text();
-      return text;
-    } catch (textError) {
-      throw new ContentParsingError(`Failed to extract text content: ${textError instanceof Error ? textError.message : 'Unknown parsing error'}`);
-    }
-  } catch (error) {
-    if (error instanceof NetworkError || 
-        error instanceof HttpError || 
-        error instanceof NotFoundError || 
-        error instanceof ContentParsingError || 
-        error instanceof InvalidUrlError ||
-        error instanceof DomainNotFoundError) {
-      throw error;
-    }
-    
-    throw determineErrorType(error, url);
+  if (lowerUrl.startsWith('htp://')) {
+    url = 'http://' + url.substring(6);
+  } else if (lowerUrl.startsWith('htps://')) {
+    url = 'https://' + url.substring(7);
+  } else if (lowerUrl.startsWith('http//')) {
+    url = 'http://' + url.substring(6);
+  } else if (lowerUrl.startsWith('https//')) {
+    url = 'https://' + url.substring(7);
+  } else if (lowerUrl.startsWith('http:/') && !lowerUrl.startsWith('http://')) {
+    url = 'http://' + url.substring(5);
+  } else if (lowerUrl.startsWith('https:/') && !lowerUrl.startsWith('https://')) {
+    url = 'https://' + url.substring(6);
   }
-}
 
-export function extractTitle(content: string) {
-  const titleMatch = content.match(/<title[^>]*>(.*?)<\/title>/i);
-  return titleMatch ? decode(titleMatch[1].trim()) : "No title found";
-}
+  lowerUrl = url.toLowerCase();
 
-export function extractMetadata(content: string) {
-  const title = extractTitle(content);
-  const metaTagRegex = /<meta[^>]*>/gi;
-  const metaTags = [...content.matchAll(metaTagRegex)];
-
-  const metadata: PageMetadata = {
-    title,
-    meta: {},
-    openGraph: {},
-    twitter: {},
-  };
-
-  metaTags.forEach((match) => {
-    const metaTag = match[0];
-
-    const nameMatch = metaTag.match(/name=["']([^"']*)["']/i);
-    const propertyMatch = metaTag.match(/property=["']([^"']*)["']/i);
-    const contentMatch = metaTag.match(/content=["']([^"']*)["']/i);
-
-    if (!contentMatch) return;
-
-    const name = nameMatch ? nameMatch[1] : undefined;
-    const property = propertyMatch ? propertyMatch[1] : undefined;
-    const content = decode(contentMatch[1]);
-
-    if (name && isInEnum(MetaTagType, name)) {
-      metadata.meta[name as MetaTagType] = content;
+  if (lowerUrl.match(/^[a-zA-Z]+:\/\//i)) {
+    if (!lowerUrl.match(/^https?:\/\//i)) {
+      throw new InvalidUrlError(url); // Pass the original URL for error reporting
     }
-
-    if (
-      metaTag.includes('rel="canonical"') ||
-      metaTag.includes("rel='canonical'")
-    ) {
-      const hrefMatch = metaTag.match(/href=["']([^"']*)["']/i);
-      if (hrefMatch) {
-        metadata.meta[MetaTagType.Canonical] = hrefMatch[1];
-      }
-    }
-
-    if (property) {
-      if (isInEnum(OpenGraphType, property)) {
-        metadata.openGraph[property as OpenGraphType] = content;
-      } else if (
-        property.startsWith("og:") ||
-        property.startsWith("article:") ||
-        property.startsWith("profile:") ||
-        property.startsWith("book:")
-      ) {
-        const matchingKey = Object.values(OpenGraphType).find(
-          (val) => val === property
-        );
-        if (matchingKey) {
-          metadata.openGraph[matchingKey as OpenGraphType] = content;
-        } else {
-          (metadata.openGraph as Record<string, string>)[property] = content;
-        }
-      }
-    }
-
-    if (
-      (property && property.startsWith("twitter:")) ||
-      (name && name.startsWith("twitter:"))
-    ) {
-      const twitterProperty = property || (name as string);
-      if (isInEnum(TwitterType, twitterProperty)) {
-        metadata.twitter[twitterProperty as TwitterType] = content;
-      } else {
-        (metadata.twitter as Record<string, string>)[twitterProperty] = content;
-      }
-    }
-  });
-
-  return metadata;
-}
-
-export function parseUrlForFilename(url: string): string {
-  let normalizedUrl = url.trim();
-  
-  if (!normalizedUrl.match(/^https?:\/\//i)) {
-    normalizedUrl = `https://${normalizedUrl}`;
-  }
-  
-  try {
-    const urlObj = new URL(normalizedUrl);
-    let filename = urlObj.hostname + urlObj.pathname.replace(/\/$/, "");
-    
-    return filename.replace(/[^a-zA-Z0-9]/g, "_");
-  } catch (error) {
-    return normalizedUrl.replace(/^https?:\/\//i, "").replace(/[^a-zA-Z0-9]/g, "_");
-  }
-}
-
-export function parseFileName(filename: string): string {
-  if (!filename.endsWith(".json")) {
-    filename += ".json";
-  }
-  return filename;
-}
-
-export async function getMetaTags(url: string) {
-  if (!url.match(/^https?:\/\//i)) {
-    const isLocalhost = url.startsWith('localhost') || url.includes('localhost:');
+  } else {
+    const isLocalhost = lowerUrl.startsWith('localhost') || lowerUrl.includes('localhost:');
     url = `${isLocalhost ? 'http' : 'https'}://${url}`;
   }
-  const content = await getWebsiteContent(url);
-  return extractMetadata(content);
+  return url;
+}
+
+// New getWebsiteContent function
+async function getWebsiteContent(normalizedUrl: string): Promise<string> {
+  try {
+    const response = await fetch(normalizedUrl, {
+      headers: {
+        'User-Agent': 'MetalensBot/1.0 (+https://github.com/rudrodip/metalens)',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      },
+      redirect: 'follow', // Handle redirects
+      signal: AbortSignal.timeout(15000), // 15 second timeout
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new NotFoundError(normalizedUrl);
+      }
+      throw new HttpError(response.status, response.statusText || `Failed to fetch content from ${normalizedUrl}`);
+    }
+
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('text/html')) {
+      throw new ContentParsingError(
+        `Invalid content type. Expected text/html, but received ${contentType} from ${normalizedUrl}`
+      );
+    }
+
+    const htmlContent = await response.text();
+    return htmlContent;
+  } catch (error) {
+    if (error instanceof MetalensError) {
+      throw error; // Re-throw known errors
+    }
+    // For other errors (fetch exceptions, AbortSignal timeout, etc.), determine their type.
+    // determineErrorType is designed for this.
+    throw determineErrorType(error, normalizedUrl);
+  }
+}
+
+// New extractTitle function
+function extractTitle(document: Document): string {
+  try {
+    const titleTag = document.querySelector('title');
+    let title = titleTag ? decode(titleTag.textContent || '') : '';
+
+    if (!title) {
+        const ogTitle = document.querySelector('meta[property="og:title"]');
+        if (ogTitle) {
+            title = decode(ogTitle.getAttribute('content') || '');
+        }
+    }
+    if (!title) {
+        const twitterTitle = document.querySelector('meta[name="twitter:title"]');
+        if (twitterTitle) {
+            title = decode(twitterTitle.getAttribute('content') || '');
+        }
+    }
+    return title.trim();
+  } catch (e) {
+    throw new MetadataExtractionError(`Failed to extract title: ${e instanceof Error ? e.message : String(e)}`);
+  }
+}
+
+// New extractMetaTagMetadata function
+function extractMetaTagMetadata(document: Document): PageMetadata['meta'] {
+  const metaData: PageMetadata['meta'] = {};
+  try {
+    const metaElements = document.querySelectorAll('meta[name]');
+    metaElements.forEach(element => {
+      const name = element.getAttribute('name') as MetaTagType;
+      const content = element.getAttribute('content');
+      if (name && content && Object.values(MetaTagType).includes(name)) {
+        metaData[name] = decode(content);
+      }
+    });
+  } catch (e) {
+    // This is unlikely to throw unless JSDOM itself has issues with querySelectorAll
+    throw new MetadataExtractionError(`Failed to extract standard meta tags: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  return metaData;
+}
+
+// New extractOpenGraphMetadata function
+function extractOpenGraphMetadata(document: Document): PageMetadata['openGraph'] {
+  const ogData: PageMetadata['openGraph'] = {};
+  try {
+    const ogElements = document.querySelectorAll('meta[property^="og:"]');
+    ogElements.forEach(element => {
+      const property = element.getAttribute('property') as OpenGraphType;
+      const content = element.getAttribute('content');
+      if (property && content && Object.values(OpenGraphType).includes(property)) {
+        ogData[property] = decode(content);
+      }
+    });
+  } catch (e) {
+    throw new MetadataExtractionError(`Failed to extract OpenGraph meta tags: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  return ogData;
+}
+
+// New extractTwitterCardMetadata function
+function extractTwitterCardMetadata(document: Document): PageMetadata['twitter'] {
+  const twitterData: PageMetadata['twitter'] = {};
+  try {
+    const twitterElements = document.querySelectorAll('meta[name^="twitter:"]');
+    twitterElements.forEach(element => {
+      const name = element.getAttribute('name') as TwitterType;
+      const content = element.getAttribute('content');
+      if (name && content && Object.values(TwitterType).includes(name)) {
+        twitterData[name] = decode(content);
+      }
+    });
+  } catch (e) {
+    throw new MetadataExtractionError(`Failed to extract Twitter Card meta tags: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  return twitterData;
+}
+
+
+// Refactored getMetaTags function (this is the main one called by cli.ts)
+export async function getMetaTags(rawUrl: string): Promise<PageMetadata> {
+  let normalizedUrl = rawUrl; // Keep a reference to the URL used for fetching, for error reporting
+  try {
+    normalizedUrl = normalizeUrlScheme(rawUrl); // Step 1: Normalize URL (can throw InvalidUrlError)
+
+    const htmlContent = await getWebsiteContent(normalizedUrl); // Step 2: Fetch content (can throw various errors)
+
+    let document: Document;
+    try {
+      document = new JSDOM(htmlContent).window.document;
+    } catch (e) {
+      throw new ContentParsingError(`Failed to parse HTML content from ${normalizedUrl}: ${e instanceof Error ? e.message : String(e)}`);
+    }
+
+    const title = extractTitle(document); // Step 3a: Extract title
+    const meta = extractMetaTagMetadata(document); // Step 3b: Extract standard meta tags
+    const openGraph = extractOpenGraphMetadata(document); // Step 3c: Extract OpenGraph
+    const twitter = extractTwitterCardMetadata(document); // Step 3d: Extract Twitter Card
+
+    // Construct the PageMetadata object
+    const pageMetadata: PageMetadata = {
+      title: title || openGraph[OpenGraphType.Title] || twitter[TwitterType.Title] || 'No title found',
+      meta,
+      openGraph,
+      twitter,
+    };
+    
+    // Ensure a URL is present in the metadata, defaulting to the normalized one
+    if (!pageMetadata.openGraph[OpenGraphType.Url] && !pageMetadata.meta[MetaTagType.Canonical]) {
+        pageMetadata.openGraph[OpenGraphType.Url] = normalizedUrl;
+    }
+
+
+    return pageMetadata;
+
+  } catch (error) {
+    // If the error is already a MetalensError, re-throw it.
+    // Otherwise, use determineErrorType for unhandled/unexpected errors.
+    // Pass normalizedUrl if available, otherwise rawUrl.
+    if (error instanceof MetalensError) {
+      throw error;
+    }
+    throw determineErrorType(error, normalizedUrl !== rawUrl ? normalizedUrl : rawUrl);
+  }
+}
+
+
+// Existing parseUrlForFilename - needs to use ParsedUrl from types.ts
+export interface ParsedUrl { // Re-defining here if not imported, but should be from types.ts
+    hostname: string;
+    path: string;
+    filename: string;
+}
+
+export function parseUrlForFilename(rawUrl: string): ParsedUrl { // Changed to use the local ParsedUrl for now
+  const normalizedUrl = normalizeUrlScheme(rawUrl);
+  try {
+    const urlObj = new URL(normalizedUrl);
+    const hostname = urlObj.hostname;
+    let path = urlObj.pathname.replace(/\/$/, ''); 
+    if (path === "" && urlObj.search) { // if path is empty but query params exist
+        path = urlObj.search;
+    } else if (path === "" && urlObj.hash) { // if path is empty but hash exists
+        path = urlObj.hash.substring(1); // remove #
+    } else if (path === "") {
+        path = "_root"; // default for root paths like example.com/
+    }
+
+    const filename = `${hostname}${path.replace(/[^a-zA-Z0-9]/g, '_')}.json`; // Changed to .json
+
+    return {
+      hostname,
+      path,
+      filename,
+    };
+  } catch (error) {
+    // This typically happens if normalizeUrlScheme still produced something invalid for URL constructor
+    // or if URL parts are unexpectedly absent.
+    throw new InvalidUrlError(`Could not parse the normalized URL: ${normalizedUrl} for filename generation. ${error instanceof Error ? error.message : ''}`);
+  }
+}
+
+// This function seems to be used by cli.ts's getSaveFilename but wasn't in the provided utils.ts
+// Adding a basic implementation.
+export function parseFileName(filename: string): string {
+  // Basic sanitization: remove characters not typically allowed in filenames
+  // and ensure it ends with .json
+  let sanitized = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+  if (!sanitized.toLowerCase().endsWith('.json')) {
+    if (sanitized.endsWith('.')) {
+      sanitized += 'json';
+    } else {
+      sanitized += '.json';
+    }
+  }
+  // Replace multiple consecutive underscores with a single one
+  sanitized = sanitized.replace(/__+/g, '_');
+  return sanitized;
 }

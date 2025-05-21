@@ -72,11 +72,19 @@ async function handleMetadataActions(metadata: PageMetadata, url: string): Promi
       console.log("\n🌐 Starting local preview server...");
       const basePort = 3141;
       const port = await findAvailablePort(basePort);
-      await startServer(port, url);
-      
-      const previewUrl = `http://localhost:${port}?url=${encodeURIComponent(url)}`;
-      console.log(`Opening preview at ${previewUrl}`);
-      await open(previewUrl);
+      try {
+        await startServer(port, url); // url is the original website url
+        
+        const previewUrl = `http://localhost:${port}?url=${encodeURIComponent(url)}`;
+        console.log(`Opening preview at ${previewUrl}`);
+        await open(previewUrl);
+      } catch (serverError) {
+        console.error(chalk.red("\n❌ Failed to start local preview server."));
+        if (serverError instanceof Error) {
+          console.error(chalk.red(`   Error: ${serverError.message}`));
+        }
+        console.error(chalk.yellow("   Please check if the port is already in use or if there are other errors in the console."));
+      }
       break;
   }
 }
@@ -120,20 +128,29 @@ function displayFormattedError(error: unknown, url: string) {
   }
 }
 
-async function processUrl(url: string): Promise<void> {
+async function processUrl(rawUrl: string): Promise<void> {
+  // rawUrl is the url as input by the user.
+  // Normalization is handled by getMetaTags and parseUrlForFilename (via getSaveFilename).
   try {
-    if (!url.match(/^https?:\/\//i)) {
-      const isLocalhost = url.startsWith('localhost') || url.includes('localhost:');
-      url = `${isLocalhost ? 'http' : 'https'}://${url}`;
-    }
+    // Log the rawUrl, or a normalized version if preferred for logging.
+    // For simplicity, logging rawUrl and letting utils handle errors during normalization.
+    // If normalizeUrlScheme was called here for logging, its potential error would need to be handled
+    // or it would preempt the error handling within getMetaTags.
+    console.log(`\nFetching metadata for ${rawUrl}...`);
 
-    console.log(`\nFetching metadata for ${url}...`);
-    const metadata = await getMetaTags(url);
+    // getMetaTags (from utils.ts) will internally call normalizeUrlScheme.
+    // If an InvalidUrlError is thrown, it will be caught by the catch block.
+    const metadata = await getMetaTags(rawUrl);
     console.log("\n✅ Metadata retrieved successfully!");
     
-    await handleMetadataActions(metadata, url);
+    // rawUrl is passed to handleMetadataActions.
+    // Inside handleMetadataActions, getSaveFilename(rawUrl) is called.
+    // getSaveFilename calls parseUrlForFilename(rawUrl).
+    // parseUrlForFilename (from utils.ts) will internally call normalizeUrlScheme.
+    await handleMetadataActions(metadata, rawUrl);
   } catch (error) {
-    displayFormattedError(error, url);
+    // Pass rawUrl to displayFormattedError so user sees their original input in error message.
+    displayFormattedError(error, rawUrl);
     
     const { retry } = await inquirer.prompt([
       {
